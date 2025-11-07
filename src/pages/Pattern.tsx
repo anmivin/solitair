@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type ChangeEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react';
 import { NativeSelect, TextInput } from '@mantine/core';
 import palette from '../../public/palette.json';
 import SidePanel from '../shared/ui/SidePanel';
@@ -53,11 +53,7 @@ const Pattern = () => {
     { name: 'salmon', r: 250, g: 128, b: 114 },
   ];
   const cellSize = 10;
-  const cols = 50;
-  const rows = 50;
 
-  const w = cols * cellSize;
-  const h = rows * cellSize;
   const [colorsNumber, setColorsNumber] = useState(2);
   const [stichesNumber, setStichesNumber] = useState(100);
   const getClosestColor = (pixelColor, palette) => {
@@ -74,6 +70,9 @@ const Pattern = () => {
     }
     return closest;
   };
+
+  const [colsNumber, setColsNumber] = useState(0);
+
   const onInputChange = useCallback(
     async (e: ChangeEvent<HTMLInputElement>) => {
       if (!e.target.files) return;
@@ -86,6 +85,7 @@ const Pattern = () => {
       const inputCanvas = document.getElementById('input') as HTMLCanvasElement;
       const inputCtx = inputCanvas.getContext('2d');
       if (!inputCtx) return;
+
       const rows = Math.round((img.height / img.width) * stichesNumber); // сохраняем пропорции
       inputCanvas.width = stichesNumber;
       inputCanvas.height = rows;
@@ -109,28 +109,25 @@ const Pattern = () => {
       const outCanvas = document.getElementById('output') as HTMLCanvasElement;
       const outCtx = outCanvas.getContext('2d');
       if (!outCtx) return;
-      outCtx.putImageData(imageData, 0, 0);
-      /*       outCanvas.width = stichesNumber * cellSize;
-      outCanvas.height = rows * cellSize; */
+      outCanvas.width = stichesNumber * cellSize;
+      outCanvas.height = rows * cellSize;
+      /* outCtx.putImageData(imageData, 0, 0); */
+      console.log(outCanvas.width, outCanvas.height);
+
       outCtx.imageSmoothingEnabled = false;
-      outCtx.drawImage(outCanvas, 0, 0, stichesNumber * cellSize * 3, rows * cellSize * 3);
-      drawGrid();
+      outCtx.drawImage(inputCanvas, 0, 0, stichesNumber * cellSize, rows * cellSize);
+      drawGrid(rows, stichesNumber);
     },
     [colorsNumber, stichesNumber]
   );
 
-  // init
-  useEffect(() => {
-    ['gridCanvas', 'stitchCanvas', 'output'].forEach((id) => {
-      const c = document.getElementById(id) as HTMLCanvasElement;
-      c.width = w;
-      c.height = h;
-    });
-  });
-
-  const drawGrid = () => {
-    const gridCtx = (document.getElementById('gridCanvas') as HTMLCanvasElement).getContext('2d');
+  const drawGrid = (rows, cols) => {
+    /*     console.log(rows, cols); */
+    const gridCanvas = document.getElementById('gridCanvas') as HTMLCanvasElement;
+    const gridCtx = gridCanvas.getContext('2d');
     if (!gridCtx) return;
+    gridCanvas.width = cols * cellSize;
+    gridCanvas.height = rows * cellSize;
     gridCtx.strokeStyle = '#ccc';
     gridCtx.lineWidth = 1;
     gridCtx.beginPath();
@@ -149,7 +146,7 @@ const Pattern = () => {
   //let scheme = [...];  твои данные
 
   // Прогресс: Set или boolean-массив
-  let completed = new Set(); // например, "x,y" как строка
+  const completed = new Set(); // например, "x,y" как строка
 
   const drawStitch = (x, y) => {
     const stitchCtx = (document.getElementById('stitchCanvas') as HTMLCanvasElement).getContext('2d');
@@ -169,7 +166,7 @@ const Pattern = () => {
   };
 
   // Перерисовать всю схему (при загрузке)
-  const redrawStitches = () => {
+  /*   const redrawStitches = () => {
     const stitchCtx = (document.getElementById('stitchCanvas') as HTMLCanvasElement).getContext('2d');
     if (!stitchCtx) return;
     stitchCtx.clearRect(0, 0, w, h);
@@ -178,25 +175,124 @@ const Pattern = () => {
         drawStitch(x, y);
       }
     }
-  };
+  }; */
 
-  const onStichClick = (e: React.MouseEvent<HTMLCanvasElement, MouseEvent>) => {
-    const stitchCanvas = document.getElementById('stitchCanvas') as HTMLCanvasElement;
+  const onStichClick = useCallback(
+    (e: React.MouseEvent<HTMLCanvasElement, MouseEvent>) => {
+      const stitchCanvas = document.getElementById('stitchCanvas') as HTMLCanvasElement;
 
-    const rect = stitchCanvas.getBoundingClientRect();
-    const x = Math.floor((e.clientX - rect.left) / cellSize);
-    const y = Math.floor((e.clientY - rect.top) / cellSize);
+      const rect = stitchCanvas.getBoundingClientRect();
+      const x = Math.floor((e.clientX - rect.left) / cellSize);
+      const y = Math.floor((e.clientY - rect.top) / cellSize);
 
-    if (x >= 0 && x < cols && y >= 0 && y < rows) {
-      const key = `${x},${y}`;
-      if (completed.has(key)) {
-        completed.delete(key); // снять отметку
-      } else {
-        completed.add(key); // отметить как готовый
+      if (x >= 0 && x < stichesNumber && y >= 0 && y < stichesNumber) {
+        const key = `${x},${y}`;
+        if (completed.has(key)) {
+          completed.delete(key); // снять отметку
+        } else {
+          completed.add(key); // отметить как готовый
+        }
+        drawStitch(x, y); // перерисовать только один стежок!
       }
-      drawStitch(x, y); // перерисовать только один стежок!
-    }
+    },
+    [stichesNumber]
+  );
+
+  const [crop, setCrop] = useState(null); // { startX, startY, endX, endY }
+  const [isDrawing, setIsDrawing] = useState(false);
+  const canvasRef = useRef(null);
+  const croppedImageRef = useRef(null);
+
+  const anotherFunc = useCallback(
+    async (e: ChangeEvent<HTMLInputElement>) => {
+      if (!e.target.files) return;
+      const file = e.target.files[0];
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.src = url;
+      await img.decode();
+
+      const rows = Math.round((img.height / img.width) * stichesNumber); // сохраняем пропорции
+
+      const outCanvas = document.getElementById('output') as HTMLCanvasElement;
+      const outCtx = outCanvas.getContext('2d');
+      if (!outCtx) return;
+      outCanvas.width = img.width;
+      outCanvas.height = img.height;
+
+      outCtx.clearRect(0, 0, outCanvas.width, outCanvas.height);
+
+      outCtx.drawImage(img, 0, 0);
+
+      if (crop) {
+        const { startX, startY, endX, endY } = crop;
+        const width = endX - startX;
+        const height = endY - startY;
+        outCtx.beginPath();
+        outCtx.rect(startX, startY, width, height);
+        outCtx.strokeStyle = '#00ff00';
+        outCtx.lineWidth = 2;
+        outCtx.stroke();
+      }
+
+      /*     drawGrid(rows, stichesNumber); */
+    },
+    [crop]
+  );
+
+  // Обработка начала выделения
+  const handleMouseDown = (e) => {
+    const canvas = canvasRef.current;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    setIsDrawing(true);
+    setCrop({ startX: x, startY: y, endX: x, endY: y });
   };
+
+  // Обработка движения мыши
+  const handleMouseMove = useCallback(
+    (e) => {
+      if (!isDrawing) return;
+      const canvas = canvasRef.current;
+      const rect = canvas.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      setCrop((prev) => ({ ...prev, endX: x, endY: y }));
+    },
+    [isDrawing]
+  );
+
+  // Завершение выделения
+  const handleMouseUp = useCallback(() => {
+    if (!isDrawing) return;
+    setIsDrawing(false);
+  }, [isDrawing]);
+
+  // Получение обрезанного изображения
+  /*   const handleCrop = () => {
+    if (!crop || !imageSrc) return;
+
+    const { startX, startY, endX, endY } = crop;
+    const x = Math.min(startX, endX);
+    const y = Math.min(startY, endY);
+    const width = Math.abs(endX - startX);
+    const height = Math.abs(endY - startY);
+
+    if (width === 0 || height === 0) return;
+
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, -x, -y);
+      const croppedDataUrl = canvas.toDataURL('image/png');
+      croppedImageRef.current.src = croppedDataUrl;
+    };
+    img.src = imageSrc;
+  }; */
 
   return (
     <div style={{ display: 'flex', width: '100vw', height: '100vh' }}>
@@ -242,13 +338,25 @@ const Pattern = () => {
             reader.readAsBinaryString(file);
           }}
         /> */}
-        <input type="file" id="imageInput" accept="image/*" onChange={(e) => onInputChange(e)} />
-        <canvas id="input" /* style={{ display: 'none' }} */></canvas>
+        <input type="file" id="imageInput" accept="image/*" onChange={(e) => anotherFunc(e)} />
+        <canvas id="input" style={{ display: 'none' }}></canvas>
 
         <div style={{ position: 'relative', width: '800px', height: '800px' }}>
-          <canvas id="output" style={{ position: 'absolute', top: 0, left: 0 }}></canvas>
+          <canvas
+            id="output"
+            style={{ position: 'absolute', top: 0, left: 0 }}
+            ref={canvasRef}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+          ></canvas>
           <canvas id="gridCanvas" style={{ position: 'absolute', top: 0, left: 0 }}></canvas>
-          <canvas id="stitchCanvas" style={{ position: 'absolute', top: 0, left: 0 }} onClick={onStichClick}></canvas>
+          <canvas
+            id="stitchCanvas"
+            style={{ position: 'absolute', top: 0, left: 0, display: 'none' }}
+            onClick={onStichClick}
+          ></canvas>
         </div>
       </div>
     </div>
