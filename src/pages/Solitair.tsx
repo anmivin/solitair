@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import Draggable from '../shared/ui/Draggable';
 import { DndContext, type DragEndEvent } from '@dnd-kit/core';
 import Droppable from '../shared/ui/Droppable';
@@ -12,6 +12,7 @@ const Solitair = () => {
   const tableCards = useSolitair((state) => state.tableCards);
   const houseCards = useSolitair((state) => state.houseCards);
   const congrats = useSolitair((state) => state.congrats);
+  const currentHystory = useSolitair((state) => state.history);
   const onMove = useSolitair((state) => state.move);
   const start = useSolitair((state) => state.start);
   const onReshuffle = useSolitair((state) => state.reshuffle);
@@ -20,6 +21,7 @@ const Solitair = () => {
     setReshuffles(0);
     start();
   };
+  const onBack = useSolitair((state) => state.back);
 
   const handleDragEnd = useCallback((params: DragEndEvent) => {
     const { over, active } = params;
@@ -34,14 +36,16 @@ const Solitair = () => {
     );
   }, [tableCards]);
 
-  useEffect(() => console.log(tableCards), [tableCards]);
-
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', alignItems: 'center' }}>
       <Button onClick={onReshuffle} disabled={reshuffles >= 2}>
         пересдать
       </Button>
       <Button onClick={start}>заново</Button>
+      <Button onClick={onBack} disabled={currentHystory.length <= 1}>
+        отменить
+      </Button>
+
       <DndContext onDragEnd={handleDragEnd}>
         <div style={{ display: 'grid', gridTemplateColumns: `1fr 1fr 1fr 1fr`, gap: '20px' }}>
           {Object.entries(groupedCards).map(([key, val]) => (

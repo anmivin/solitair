@@ -23,6 +23,8 @@ interface SolitairStore {
   reshuffle: () => void;
   move: (data: { card: Card; to: string }) => void;
   setCongrats: (data: boolean) => void;
+  history: { tableCards: Card[]; houseCards: Record<Suits, Card[]>; direction: 'asc' | 'desc' | null }[];
+  back: () => void;
 }
 
 export const useSolitair = create<SolitairStore>((set) => ({
@@ -30,8 +32,10 @@ export const useSolitair = create<SolitairStore>((set) => ({
   houseCards: initHouse,
   direction: null,
   congrats: false,
+  history: [],
   start: () => {
-    set({ tableCards: shuffle(initDeck), houseCards: initHouse, direction: null });
+    const newGame = { tableCards: shuffle(initDeck), houseCards: initHouse, direction: null };
+    set({ ...newGame, history: [newGame] });
   },
   reshuffle: () => {
     set((state) => ({ tableCards: shuffle(state.tableCards) }));
@@ -57,7 +61,6 @@ export const useSolitair = create<SolitairStore>((set) => ({
         newTable = state.tableCards.filter((item) => item.id !== data.card.id);
         newHouse = { ...state.houseCards, [data.card.suit]: [data.card, ...state.houseCards[data.card.suit]] };
       } else {
-        console.log(data);
         const splitteId = data.to.split('-');
         if (splitteId)
           newTable = state.tableCards.map((item) =>
@@ -69,10 +72,23 @@ export const useSolitair = create<SolitairStore>((set) => ({
         houseCards: newHouse,
         direction,
         congrats: newTable.length === 0 ? true : state.congrats,
+        history: [...state.history, { tableCards: newTable, houseCards: newHouse, direction }],
       };
     });
   },
   setCongrats: (data: boolean) => {
     set({ congrats: data });
+  },
+  back: () => {
+    set((state) => {
+      const lastValue = state.history.slice(0, -1);
+
+      return {
+        tableCards: lastValue.at(-1)?.tableCards,
+        houseCards: lastValue.at(-1)?.houseCards,
+        direction: lastValue.at(-1)?.direction,
+        history: lastValue,
+      };
+    });
   },
 }));
