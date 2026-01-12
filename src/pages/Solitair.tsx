@@ -26,7 +26,7 @@ const Solitair = () => {
   const handleDragEnd = useCallback((params: DragEndEvent) => {
     const { over, active } = params;
     if (!over) return;
-    onMove({ card: active.data.current as Card, to: over.id });
+    onMove({ card: active.data.current as Card, to: over.id.toString() });
   }, []);
 
   const groupedCards = useMemo(() => {

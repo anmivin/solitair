@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { type Card, Cards, Suits, initDeck, initHouse, neighbourMap } from '../types/cards-two';
+import { type Card, initDeck } from '../types/cards-two';
 
 const initShuffle = (array: Card[]) => {
   const newArr = array.slice().flatMap((i) => i);

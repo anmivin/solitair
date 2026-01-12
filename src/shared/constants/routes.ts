@@ -28,9 +28,9 @@ export const menuRoutes: RoutesProps[] = [
     Component: Pattern,
     name: 'Схема',
   },
-  /*   {
+  {
     link: Paths.solitairtwo,
     Component: SolitairTwo,
     name: 'Пасьянс2',
-  }, */
+  },
 ];

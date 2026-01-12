@@ -1,5 +1,3 @@
-import type { ReactNode } from 'react';
-
 export enum Suits {
   SPADES = 'spades',
   HEARTS = 'hearts',
@@ -30,7 +28,11 @@ export interface Card {
 }
 
 export const initDeck = Object.keys(Suits).flatMap((suit) =>
-  Object.keys(Cards).map((card) => ({ card: Cards[card], suit: Suits[suit], id: `${Cards[card]}_${Suits[suit]}` }))
+  Object.keys(Cards).map((card) => ({
+    card: Cards[card as keyof typeof Cards],
+    suit: Suits[suit as keyof typeof Suits],
+    id: `${Cards[card as keyof typeof Cards]}_${Suits[suit as keyof typeof Suits]}`,
+  }))
 );
 
 export const initHouse = {

@@ -1,6 +1,5 @@
 import { useCallback, useRef, useState, type ChangeEvent } from 'react';
 import { Modal } from '@mantine/core';
-import pal from '../../public/pal.json';
 import Cropper, { type ReactCropperElement } from 'react-cropper';
 import 'react-cropper/node_modules/cropperjs/dist/cropper.css';
 import SidePanel from '../shared/ui/SidePanel';
@@ -44,7 +43,7 @@ const Pattern = () => {
   const [colorsNumber, setColorsNumber] = useState(2);
   const [stichesNumber, setStichesNumber] = useState(100);
 
-  const getClosestColor = (pixelColor, palette) => {
+  /*   const getClosestColor = (pixelColor, palette) => {
     let minDist = Infinity;
     let closest = palette[0];
     for (const color of palette) {
@@ -57,7 +56,7 @@ const Pattern = () => {
       }
     }
     return closest;
-  };
+  }; */
 
   const rgbToLab = (r: number, g: number, b: number) => {
     // sRGB → linear RGB
@@ -114,7 +113,7 @@ const Pattern = () => {
     return closest;
   };
 
-  const drawGrid = (rows, cols) => {
+  const drawGrid = (rows: number, cols: number) => {
     const gridCanvas = document.getElementById('gridCanvas') as HTMLCanvasElement;
     const gridCtx = gridCanvas.getContext('2d');
     if (!gridCtx) return;
@@ -136,7 +135,7 @@ const Pattern = () => {
 
   const completed = new Set();
 
-  const drawStitch = (x, y) => {
+  const drawStitch = (x: number, y: number) => {
     const stitchCtx = (document.getElementById('stitchCanvas') as HTMLCanvasElement).getContext('2d');
     if (!stitchCtx) return;
     if (completed.has(`${x},${y}`)) {

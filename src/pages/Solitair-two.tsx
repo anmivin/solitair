@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import Draggable from '../shared/ui/Draggable';
 import { DndContext, type DragEndEvent } from '@dnd-kit/core';
 import Droppable from '../shared/ui/Droppable';
-import { type Card, Cards, Suits, initDeck, neighbourMap } from '../shared/types/cards-two';
+import { type Card } from '../shared/types/cards-two';
 
 import { useSolitairTwo } from '../shared/stores/solitairStoreTwo';
 import { Modal, Button } from '@mantine/core';
@@ -28,7 +28,7 @@ const SolitairTwo = () => {
   const handleDragEnd = useCallback((params: DragEndEvent) => {
     const { over, active } = params;
     if (!over) return;
-    onMove({ card: active.data.current as Card, to: over.id });
+    onMove({ card: active.data.current as Card, to: over.id.toString() });
   }, []);
 
   const groupedCards = useMemo(() => {

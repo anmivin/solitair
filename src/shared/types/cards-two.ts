@@ -30,10 +30,10 @@ export interface Card {
 
 export const initDeck: Card[] = Object.keys(Suits).flatMap((suit) =>
   Object.keys(Cards).map((card) => ({
-    card: Cards[card],
-    suit: Suits[suit],
-    id: `${Cards[card]}_${Suits[suit]}`,
-    color: [Suits.CLUBS, Suits.SPADES].includes(Suits[suit]) ? 'black' : 'red',
+    card: Cards[card as keyof typeof Cards],
+    suit: Suits[suit as keyof typeof Suits],
+    id: `${Cards[card as keyof typeof Cards]}_${Suits[suit as keyof typeof Suits]}`,
+    color: [Suits.CLUBS, Suits.SPADES].includes(Suits[suit as keyof typeof Suits]) ? 'black' : 'red',
   }))
 );
 
