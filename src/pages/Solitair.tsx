@@ -53,7 +53,7 @@ const Solitair = () => {
               {val
                 .sort((a, b) => (a.position?.order ?? 0) - (b.position?.order ?? 0))
                 .map((i, ind) => {
-                  const url = `/cards/${i.card}_of_${i.suit}.svg`;
+                  const url = `${import.meta.env.BASE_URL}cards/${i.card}_of_${i.suit}.svg`;
                   return (
                     <>
                       {ind === val.length - 1 ? (
@@ -91,7 +91,9 @@ const Solitair = () => {
         </div>
         <div style={{ display: 'flex', gap: '20px' }}>
           {Object.entries(houseCards).map(([key, value]) => {
-            const url = value[0] ? `/cards/${value[0].card}_of_${value[0].suit}.svg` : `/cards/${key}.svg`;
+            const url = value[0]
+              ? `${import.meta.env.BASE_URL}cards/${value[0].card}_of_${value[0].suit}.svg`
+              : `${import.meta.env.BASE_URL}cards/${key}.svg`;
 
             return (
               <>
