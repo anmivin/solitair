@@ -1,8 +1,11 @@
 import { useCallback, useEffect, useRef, useState, type ChangeEvent } from 'react';
-import { NativeSelect, TextInput } from '@mantine/core';
-import palette from '../../public/palette.json';
+import { Button, Modal, NativeSelect, TextInput } from '@mantine/core';
+import pal from '../../public/pal.json';
+import Cropper, { type ReactCropperElement } from 'react-cropper';
+import 'react-cropper/node_modules/cropperjs/dist/cropper.css';
 import SidePanel from '../shared/ui/SidePanel';
 import { read, utils } from 'xlsx';
+import { keyBy } from 'lodash';
 const Pattern = () => {
   const simplePalette = [
     // ——— Чёрно-белая основа (N=2) ———
@@ -203,43 +206,6 @@ const Pattern = () => {
   const canvasRef = useRef(null);
   const croppedImageRef = useRef(null);
 
-  const anotherFunc = useCallback(
-    async (e: ChangeEvent<HTMLInputElement>) => {
-      if (!e.target.files) return;
-      const file = e.target.files[0];
-      const url = URL.createObjectURL(file);
-      const img = new Image();
-      img.src = url;
-      await img.decode();
-
-      const rows = Math.round((img.height / img.width) * stichesNumber); // сохраняем пропорции
-
-      const outCanvas = document.getElementById('output') as HTMLCanvasElement;
-      const outCtx = outCanvas.getContext('2d');
-      if (!outCtx) return;
-      outCanvas.width = img.width;
-      outCanvas.height = img.height;
-
-      outCtx.clearRect(0, 0, outCanvas.width, outCanvas.height);
-
-      outCtx.drawImage(img, 0, 0);
-
-      if (crop) {
-        const { startX, startY, endX, endY } = crop;
-        const width = endX - startX;
-        const height = endY - startY;
-        outCtx.beginPath();
-        outCtx.rect(startX, startY, width, height);
-        outCtx.strokeStyle = '#00ff00';
-        outCtx.lineWidth = 2;
-        outCtx.stroke();
-      }
-
-      /*     drawGrid(rows, stichesNumber); */
-    },
-    [crop]
-  );
-
   // Обработка начала выделения
   const handleMouseDown = (e) => {
     const canvas = canvasRef.current;
@@ -294,6 +260,41 @@ const Pattern = () => {
     img.src = imageSrc;
   }; */
 
+  const [modalOpen, setModalOpen] = useState(false);
+  const [imgUrl, setImgUrl] = useState('');
+  const cropperRef = useRef<ReactCropperElement | null>(null);
+
+  const createCropperSrc = (e: ChangeEvent<HTMLInputElement>) => {
+    if (!e.target.files) return;
+    const file = e.target.files[0];
+    const url = URL.createObjectURL(file);
+    setImgUrl(url);
+    setModalOpen(true);
+  };
+
+  const onCrop = useCallback(async () => {
+    const imageElement = cropperRef?.current;
+    const cropper = imageElement?.cropper;
+
+    const url = cropper?.getCroppedCanvas().toDataURL();
+    const img = new Image();
+    if (!url) return;
+    img.src = url;
+    await img.decode();
+
+    const rows = Math.round((img.height / img.width) * stichesNumber); // сохраняем пропорции
+
+    const outCanvas = document.getElementById('output') as HTMLCanvasElement;
+    const outCtx = outCanvas.getContext('2d');
+    if (!outCtx) return;
+    outCanvas.width = img.width;
+    outCanvas.height = img.height;
+
+    outCtx.drawImage(img, 0, 0);
+    setModalOpen(false);
+
+    drawGrid(rows, stichesNumber);
+  }, [stichesNumber]);
   return (
     <div style={{ display: 'flex', width: '100vw', height: '100vh' }}>
       <SidePanel
@@ -303,6 +304,13 @@ const Pattern = () => {
         stichesNumber={stichesNumber}
         setStichesNumber={setStichesNumber}
       />
+      <Button
+        onClick={() => {
+          console.log(keyBy(pal, 'dmc'));
+        }}
+      >
+        kkdkdkd
+      </Button>
       <div style={{ display: 'flex', flexDirection: 'column' }}></div>
 
       <div style={{ display: 'flex', flexDirection: 'column', padding: 20 }}>
@@ -338,7 +346,7 @@ const Pattern = () => {
             reader.readAsBinaryString(file);
           }}
         /> */}
-        <input type="file" id="imageInput" accept="image/*" onChange={(e) => anotherFunc(e)} />
+        <input type="file" id="imageInput" accept="image/*" onChange={(e) => createCropperSrc(e)} />
         <canvas id="input" style={{ display: 'none' }}></canvas>
 
         <div style={{ position: 'relative', width: '800px', height: '800px' }}>
@@ -357,6 +365,17 @@ const Pattern = () => {
             style={{ position: 'absolute', top: 0, left: 0, display: 'none' }}
             onClick={onStichClick}
           ></canvas>
+
+          <Modal opened={modalOpen} onClose={() => setModalOpen(false)} size="100%">
+            <Cropper
+              src={imgUrl}
+              style={{ height: '80vh' /*  width: '100%' */ }}
+              guides={false}
+              ref={cropperRef}
+              /*           crop={onCrop} */
+            />
+            <button onClick={onCrop}>Crop Image</button>
+          </Modal>
         </div>
       </div>
     </div>
